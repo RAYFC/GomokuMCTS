@@ -8,17 +8,16 @@ class BoardEvaluator(object):
 
 	def __init__ (self):
 		# self.POS is for adding weight to each intersetion
-		# add weight of 7 to the center, 6 to the outer square, then
-		# 5, 4, 3, 2, 1, at last 0 to the outermost square.
+		# add weight of 4 to the center, 3 to the outer square, then
+		# 2, 1, at last 0 to the outermost square.
 		self.POS = []
-		for i in range(15):
+		for i in range(9):
 			row = []
-			for j in range(15):
-				row.append( 7 - max(abs(i - 7), abs(j - 7)) )
-			# row = [ (7 - max(abs(i - 7), abs(j - 7))) for j in range(15) ]
+			for j in range(9):
+				row.append( 4 - max(abs(i - 4), abs(j - 4)) )
+			# row = [ (4 - max(abs(i - 4), abs(j - 4))) for j in range(9) ]
 			self.POS.append(tuple(row))
-		
-		
+			
 
 		# different types of situations below
 		self.cTwo = 1		# chong'er	2 stones in a row, 1 move to make a chongsan
@@ -30,14 +29,14 @@ class BoardEvaluator(object):
 		self.five = 7		# huowu		5 stones in a row
 		self.analyzed = 8		# has benn analyzed
 		self.unanalyzed = 0			# has not been analyzed
-		self.result = [ 0 for i in range(30) ]		# save current reslut of analyzation in a line
-		self.line = [ 0 for i in range(30) ]		# current data in a line
+		self.result = [ 0 for i in range(18) ]		# save current reslut of analyzation in a line
+		self.line = [ 0 for i in range(18) ]		# current data in a line
 		self.record = []			# result of analysis of whole board 
 									# format of each item in list is record[row][col][dir]
-		for i in range(15):
+		for i in range(9):
 			self.record.append([])
 			self.record[i] = []
-			for j in range(15):
+			for j in range(9):
 				self.record[i].append([ 0, 0, 0, 0])
 		self.count = []				# count of each situation: count[black/white][situation]
 		for i in range(3):
@@ -50,9 +49,9 @@ class BoardEvaluator(object):
 	def reset(self):
 		unanalyzed = self.unanalyzed
 		count = self.count
-		for i in range(15):
+		for i in range(9):
 			line = self.record[i]
-			for j in range(15):
+			for j in range(9):
 				line[j][0] = unanalyzed
 				line[j][1] = unanalyzed
 				line[j][2] = unanalyzed
@@ -100,10 +99,10 @@ class BoardEvaluator(object):
 		analyzed = self.analyzed
 		self.reset()
 		# analysis in 4 directions
-		for i in range(15):
+		for i in range(9):
 			boardrow = board[i]
 			recordrow = record[i]
-			for j in range(15):
+			for j in range(9):
 				if boardrow[j] != 0:
 					# has not analyzed horizontally
 					if recordrow[j][0] == unanalyzed:
@@ -133,8 +132,8 @@ class BoardEvaluator(object):
 		for c in (five, four, cFour, three, cThree, two, cTwo):
 			check[c] = 1
 		# for each stone on the board
-		for i in range(15):
-			for j in range(15):
+		for i in range(9):
+			for j in range(9):
 				stone = board[i][j]
 				if stone != 0:
 					# for 4 directions
@@ -251,13 +250,13 @@ class BoardEvaluator(object):
 		
 		
 		# include weight for each intersection
-		# add weight of 7 to the center, 6 to the outer square, then
-		# 5, 4, 3, 2, 1, at last 0 to the outermost square.
+		# add weight of 4 to the center, 3 to the outer square, then
+		# 2, 1, at last 0 to the outermost square.
 		wc = 0
 		bc = 0
 		# for each intersection with a stone, add weight
-		for i in range(15):
-			for j in range(15):
+		for i in range(9):
+			for j in range(9):
 				stone = board[i][j]
 				if stone != 0:
 					if stone == white:
@@ -282,10 +281,10 @@ class BoardEvaluator(object):
 		record = self.record
 		unanalyzed = self.unanalyzed
 		# add each intersection in a row to line
-		for x in range(15):
+		for x in range(9):
 			line[x] = board[i][x]
-		self.analysis_line(line, result, 15, j)
-		for x in range(15):
+		self.analysis_line(line, result, 9, j)
+		for x in range(9):
 			if result[x] != unanalyzed:
 				record[i][x][0] = result[x]
 		return record[i][j][0]
@@ -297,10 +296,10 @@ class BoardEvaluator(object):
 		result = self.result
 		record = self.record
 		unanalyzed = self.unanalyzed
-		for x in range(15):
+		for x in range(9):
 			line[x] = board[x][j]
-		self.analysis_line(line, result, 15, i)
-		for x in range(15):
+		self.analysis_line(line, result, 9, i)
+		for x in range(9):
 			if result[x] != unanalyzed:
 				record[x][j][1] = result[x]
 		return record[i][j][1]
@@ -317,8 +316,8 @@ class BoardEvaluator(object):
 		else:
 			x, y = 0, i - j
 		k = 0
-		while k < 15:
-			if x + k > 14 or y + k > 14:
+		while k < 9:
+			if x + k > 8 or y + k > 8:
 				break
 			line[k] = board[y + k][x + k]
 			k += 1
@@ -335,13 +334,13 @@ class BoardEvaluator(object):
 		result = self.result
 		record = self.record
 		unanalyzed = self.unanalyzed
-		if 14 - i < j:
-			x, y, realnum = j - 14 + i, 14, 14 - i
+		if 8 - i < j:
+			x, y, realnum = j - 8 + i, 8, 8 - i
 		else:
 			x, y, realnum = 0, i + j, j
 		k = 0
-		while k < 15:
-			if x + k > 14 or y - k < 0:
+		while k < 9:
+			if x + k > 8 or y - k < 0:
 				break
 			line[k] = board[y - k][x + k]
 			k += 1
@@ -361,13 +360,13 @@ class BoardEvaluator(object):
 		four = self.four
 		cFour = self.cFour
 		
-		while len(line) < 30:
-			line.append(15)
-		while len(record) < 30:
+		while len(line) < 18:
+			line.append(9)
+		while len(record) < 18:
 			record.append(unanalyzed)
 		
-		for i in range(num, 30):
-			line[i] = 15
+		for i in range(num, 18):
+			line[i] = 9
 		for i in range(num):
 			record[i] = unanalyzed
 		

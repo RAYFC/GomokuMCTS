@@ -25,28 +25,28 @@ class BoardCanvas(tk.Canvas):
 	def draw_gameBoard(self):
 		"""Plot the game board."""
 
-		# 15 horizontal lines
-		for i in range(15):
+		# 9 horizontal lines
+		for i in range(9):
 			start_pixel_x = (i + 1) * 30
 			start_pixel_y = (0 + 1) * 30
 			end_pixel_x = (i + 1) * 30
-			end_pixel_y = (14 + 1) * 30
+			end_pixel_y = (8 + 1) * 30
 			self.create_line(start_pixel_x, start_pixel_y, end_pixel_x, end_pixel_y)
 
-		# 15 vertical lines
-		for j in range(15):
+		# 9 vertical lines
+		for j in range(9):
 			start_pixel_x = (0 + 1) * 30
 			start_pixel_y = (j + 1) * 30
-			end_pixel_x = (14 + 1) * 30
+			end_pixel_x = (8 + 1) * 30
 			end_pixel_y = (j + 1) * 30
 			self.create_line(start_pixel_x, start_pixel_y, end_pixel_x, end_pixel_y)
 
 		# place a "star" to particular intersections 
-		self.draw_star(3,3)
-		self.draw_star(11,3)
-		self.draw_star(7,7)
-		self.draw_star(3,11)
-		self.draw_star(11,11)
+		self.draw_star(2, 2)
+		self.draw_star(6, 2)
+		self.draw_star(4, 4)
+		self.draw_star(2, 6)
+		self.draw_star(6, 6)
 
 
 	def draw_star(self, row, col):
@@ -138,8 +138,8 @@ class BoardCanvas(tk.Canvas):
 			invalid_pos = True
 			# since a user might not click exactly on an intersection, place the stone onto
 			# the intersection closest to where the user clicks
-			for i in range(15):
-				for j in range(15):
+			for i in range(9):
+				for j in range(9):
 					pixel_x = (i + 1) * 30
 					pixel_y = (j + 1) * 30
 					square_x = math.pow((event.x - pixel_x), 2)
@@ -147,9 +147,9 @@ class BoardCanvas(tk.Canvas):
 					distance =  math.sqrt(square_x + square_y)
 
 					# since there is noly one intersection such that the distance between it 
-					# and where the user clicks is less than 15, it is not necessary to find 
+					# and where the user clicks is less than 9, it is not necessary to find 
 					# the actual least distance
-					if (distance < 15) and (self.gameBoard.board()[i][j] == 0):
+					if (distance < 9) and (self.gameBoard.board()[i][j] == 0):
 						invalid_pos = False
 						row, col = i, j
 						self.draw_stone(i,j)
@@ -180,7 +180,7 @@ class BoardCanvas(tk.Canvas):
 		# If the user wins the game, end the game and unbind.
 		if self.gameBoard.check() == 1:
 			print('BLACK WINS !!')
-			self.create_text(240, 500, text = 'BLACK WINS !!')
+			self.create_text(150, 320, text = 'BLACK WINS !!')
 			self.unbind('<Button-1>')
 			return 0
 		
@@ -191,7 +191,7 @@ class BoardCanvas(tk.Canvas):
 		# Determine the position the program will place a white stone on.
 		# Place a white stone after determining the position.
 		score, row, col = self.boardSearcher.search(self.turn, self.depth)
-		coord = '%s%s'%(chr(ord('A') + row), chr(ord('A') + col))
+		coord = '%s%s'%(chr(ord('A') + row), col + 1)
 		print('Program has moved to {}\n'.format(coord))
 		self.gameBoard.board()[row][col] = 2
 		self.draw_stone(row,col)
@@ -209,7 +209,7 @@ class BoardCanvas(tk.Canvas):
 		# If the program wins the game, end the game and unbind.
 		if self.gameBoard.check() == 2:
 			print('WHITE WINS.')
-			self.create_text(240, 500, text = 'WHITE WINS')
+			self.create_text(150, 320, text = 'WHITE WINS')
 			self.unbind('<Button-1>')
 			return 0
 			
@@ -225,6 +225,6 @@ class BoardFrame(tk.Frame):
 
 
 	def create_widgets(self):
-		self.boardCanvas = BoardCanvas(height = 550, width = 480)
+		self.boardCanvas = BoardCanvas(height = 370, width = 300)
 		self.boardCanvas.bind('<Button-1>', self.boardCanvas.gameLoop)
 		self.boardCanvas.pack()

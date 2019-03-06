@@ -6,7 +6,7 @@ class BoardSearcher(object):
 
 	def __init__ (self):
 		self.evaluator = BoardEvaluator()
-		self.board = [ [ 0 for n in range(15) ] for i in range(15) ]
+		self.board = [ [ 0 for n in range(9) ] for i in range(9) ]
 		self.gameover = 0
 		self.overvalue = 0
 		self.maxdepth = 3	# set the max depth to 3 so that the running time
@@ -22,8 +22,8 @@ class BoardSearcher(object):
 		moves = []
 		board = self.board
 		POSES = self.evaluator.POS
-		for i in range(15):
-			for j in range(15):
+		for i in range(9):
+			for j in range(9):
 				if board[i][j] == 0:
 					score = POSES[i][j]
 					moves.append((score, i, j))

@@ -2,8 +2,8 @@ class GameBoard(object):
     """Game board."""
 
     def __init__(self):
-        # board is a 15*15 array: each posision is initially set to be 0
-        self.__board = [[0 for _ in range(15)] for _ in range(15)]
+        # board is a 9*9 array: each posision is initially set to be 0
+        self.__board = [[0 for _ in range(9)] for _ in range(9)]
 
         # store positions of 5 stones in a line
         self.won = {}
@@ -11,13 +11,13 @@ class GameBoard(object):
 
     def reset(self):
         """Clear the board (set all position to 0)."""
-        self.__board = [[0 for _ in range(15)] for _ in range(15)]
+        self.__board = [[0 for _ in range(9)] for _ in range(9)]
 
 
     def get(self, row, col):
         """Get the value at a coord."""
         
-        if row < 0 or row >= 15 or col < 0 or col >= 15:
+        if row < 0 or row >= 9 or col < 0 or col >= 9:
             return 0
         return self.__board[row][col]
 
@@ -33,8 +33,8 @@ class GameBoard(object):
         # a coordinate stands for a specific direction, imagine the direction of a coordinate
         # relative to the origin on xy-axis
         dirs = ((1, -1), (1, 0), (1, 1), (0, 1))
-        for i in range(15):
-            for j in range(15):
+        for i in range(9):
+            for j in range(9):
                 # if no stone is on the position, don't need to consider this position
                 if board[i][j] == 0:
                     continue
@@ -69,11 +69,11 @@ class GameBoard(object):
 
     def show(self):
         """Output current board on terminal."""
-        print('  A B C D E F G H I J K L M N O')
+        print('  A B C D E F G H I')
         self.check()
-        for col in range(15):
-            print(chr(ord('A') + col), end=" ")
-            for row in range(15):
+        for col in range(9):
+            print(col + 1, end=" ")
+            for row in range(9):
                 ch = self.__board[row][col]
                 if ch == 0:
                     print('.', end=" ")
