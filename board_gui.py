@@ -2,7 +2,7 @@ from __future__ import print_function
 import tkinter as tk
 import math
 import pickle
-from game import Board, Game
+from game_board import Board
 from mcts_pure import MCTSPlayer as MCTS_Pure
 from mcts_alphaZero import MCTSPlayer
 from human_play import Human
@@ -30,7 +30,6 @@ class BoardCanvas(tk.Canvas):
 		self.height = 8
 		self.model_file = 'models/best_policy_8_8_5.model'
 		self.board = Board(width=self.width, height=self.height, n_in_row=5)
-		self.game = Game(self.board)
 
         # load the trained policy_value_net in either Theano/Lasagne, PyTorch or TensorFlow
         # best_policy = PolicyValueNet(width, height, model_file = model_file)
@@ -54,12 +53,12 @@ class BoardCanvas(tk.Canvas):
 
 		self.start_player = 0	# 0 - human, 1 - mcts_player
 
-		self.game.board.init_board(self.start_player)
-		p1, p2 = self.game.board.players
+		self.board.init_board(self.start_player)
+		p1, p2 = self.board.players
 		self.human.set_player_ind(p1)
 		self.mcts_player.set_player_ind(p2)
 		self.players = {p2: self.mcts_player, p1: self.human}
-		self.game.graphic(self.game.board, self.human.player, self.mcts_player.player)
+		self.board.show(self.human.player, self.mcts_player.player)
 
 
 	def draw_gameBoard(self):
@@ -216,13 +215,13 @@ class BoardCanvas(tk.Canvas):
 
 		# Place a black stone after determining the position
 		location = [row, col]
-		move = self.game.board.location_to_move(location)
-		self.game.board.do_move(move)
-		self.game.graphic(self.game.board, self.human.player, self.mcts_player.player)
+		move = self.board.location_to_move(location)
+		self.board.do_move(move)
+		self.board.show(self.human.player, self.mcts_player.player)
 		print('\n')
 
 		# If the user wins the game, end the game and unbind.
-		end, winner = self.game.board.game_end()
+		end, winner = self.board.game_end()
 		if end:
 			if winner != -1:
 				print("{} WINS".format(self.players[winner]))
@@ -239,10 +238,10 @@ class BoardCanvas(tk.Canvas):
 		
 		# Determine the position the program will place a white stone on.
 		# Place a white stone after determining the position.
-		move = self.mcts_player.get_action(self.game.board)
-		self.game.board.do_move(move)
+		move = self.mcts_player.get_action(self.board)
+		self.board.do_move(move)
 
-		row, col = self.game.board.move_to_location(move)
+		row, col = self.board.move_to_location(move)
 		coord = '%s%s'%(chr(ord('A') + row), col + 1)
 		print('Program has moved to {}\n'.format(coord))
 		self.draw_stone(row,col)
@@ -251,14 +250,14 @@ class BoardCanvas(tk.Canvas):
 		else:
 			self.draw_prev_stone(self.prev_row, self.prev_col)
 		self.prev_row, self.prev_col = row, col
-		self.game.graphic(self.game.board, self.human.player, self.mcts_player.player)
+		self.board.show(self.human.player, self.mcts_player.player)
 		print('\n')
 
 		# bind after the program makes its move so that the user can continue to play
 		self.bind('<Button-1>', self.gameLoop)
 
 		# If the program wins the game, end the game and unbind.
-		end, winner = self.game.board.game_end()
+		end, winner = self.board.game_end()
 		if end:
 			if winner != -1:
 				print("{} WINS".format(self.players[winner]))
