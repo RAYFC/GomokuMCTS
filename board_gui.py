@@ -1,8 +1,12 @@
+from __future__ import print_function
 import tkinter as tk
 import math
-from game_board import GameBoard
-from board_searcher import BoardSearcher
-
+import pickle
+from game import Board, Game
+from mcts_pure import MCTSPlayer as MCTS_Pure
+from mcts_alphaZero import MCTSPlayer
+from human_play import Human
+from policy_value_net_numpy import PolicyValueNetNumpy
 
 class BoardCanvas(tk.Canvas):
 	"""Apply the tkinter Canvas Widget to plot the game board and stones."""
@@ -11,9 +15,6 @@ class BoardCanvas(tk.Canvas):
 		
 		tk.Canvas.__init__(self, master, height=height, width=width)
 		self.draw_gameBoard()
-		self.gameBoard = GameBoard()
-		self.boardSearcher = BoardSearcher()
-		self.boardSearcher.board = self.gameBoard.board()
 		self.turn = 2
 		self.undo = False
 		self.depth = 2
@@ -21,32 +22,72 @@ class BoardCanvas(tk.Canvas):
 		self.prev_row = 0
 		self.prev_col = 0
 
+		self.initPlayers()
+		
+
+	def initPlayers(self):
+		self.width = 8
+		self.height = 8
+		self.model_file = 'models/best_policy_8_8_5.model'
+		self.board = Board(width=self.width, height=self.height, n_in_row=5)
+		self.game = Game(self.board)
+		# ############### human VS AI ###################
+        # load the trained policy_value_net in either Theano/Lasagne, PyTorch or TensorFlow
+
+        # best_policy = PolicyValueNet(width, height, model_file = model_file)
+        # mcts_player = MCTSPlayer(best_policy.policy_value_fn, c_puct=5, n_playout=400)
+
+        # load the provided model (trained in Theano/Lasagne) into a MCTS player written in pure numpy
+		try:
+			self.policy_param = pickle.load(open(self.model_file, 'rb'))
+		except:
+			self.policy_param = pickle.load(open(self.model_file, 'rb'), encoding='bytes')  # To support python3
+		self.best_policy = PolicyValueNetNumpy(self.width, self.height, self.policy_param)
+		self.mcts_player = MCTSPlayer(self.best_policy.policy_value_fn,
+									c_puct=5,
+									n_playout=400)  # set larger n_playout for better performance
+
+		# uncomment the following line to play with pure MCTS (it's much weaker even with a larger n_playout)
+		# self.mcts_player = MCTS_Pure(c_puct=5, n_playout=1000)
+
+		# human player, input your move in the format: 2,3
+		self.human = Human()
+
+		self.start_player = 0	# 0 - human, 1 - mcts_player
+
+		self.game.board.init_board(self.start_player)
+		p1, p2 = self.game.board.players
+		self.human.set_player_ind(p1)
+		self.mcts_player.set_player_ind(p2)
+		self.players = {p2: self.mcts_player, p1: self.human}
+		self.game.graphic(self.game.board, self.human.player, self.mcts_player.player)
+
 
 	def draw_gameBoard(self):
 		"""Plot the game board."""
 
-		# 9 horizontal lines
-		for i in range(9):
+		# 8 horizontal lines
+		for i in range(8):
 			start_pixel_x = (i + 1) * 30
 			start_pixel_y = (0 + 1) * 30
 			end_pixel_x = (i + 1) * 30
-			end_pixel_y = (8 + 1) * 30
+			end_pixel_y = (7 + 1) * 30
 			self.create_line(start_pixel_x, start_pixel_y, end_pixel_x, end_pixel_y)
 
-		# 9 vertical lines
-		for j in range(9):
+		# 8 vertical lines
+		for j in range(8):
 			start_pixel_x = (0 + 1) * 30
 			start_pixel_y = (j + 1) * 30
-			end_pixel_x = (8 + 1) * 30
+			end_pixel_x = (7 + 1) * 30
 			end_pixel_y = (j + 1) * 30
 			self.create_line(start_pixel_x, start_pixel_y, end_pixel_x, end_pixel_y)
 
 		# place a "star" to particular intersections 
-		self.draw_star(2, 2)
-		self.draw_star(6, 2)
-		self.draw_star(4, 4)
-		self.draw_star(2, 6)
-		self.draw_star(6, 6)
+		# self.draw_star(2, 2)
+		# self.draw_star(6, 2)
+		# self.draw_star(4, 4)
+		# self.draw_star(2, 6)
+		# self.draw_star(6, 6)
 
 
 	def draw_star(self, row, col):
@@ -149,7 +190,7 @@ class BoardCanvas(tk.Canvas):
 					# since there is noly one intersection such that the distance between it 
 					# and where the user clicks is less than 9, it is not necessary to find 
 					# the actual least distance
-					if (distance < 9) and (self.gameBoard.board()[i][j] == 0):
+					if distance < 9:
 						invalid_pos = False
 						row, col = i, j
 						self.draw_stone(i,j)
@@ -175,14 +216,23 @@ class BoardCanvas(tk.Canvas):
 				break
 
 		# Place a black stone after determining the position
-		self.gameBoard.board()[row][col] = 1
+		location = [row, col]
+		move = self.game.board.location_to_move(location)
+		self.game.board.do_move(move)
+		self.game.graphic(self.game.board, self.human.player, self.mcts_player.player)
+		print('\n')
 
 		# If the user wins the game, end the game and unbind.
-		if self.gameBoard.check() == 1:
-			print('BLACK WINS !!')
-			self.create_text(150, 320, text = 'BLACK WINS !!')
+		end, winner = self.game.board.game_end()
+		if end:
+			if winner != -1:
+				print("{} WINS".format(self.players[winner]))
+				self.create_text(150, 320, text = 'BLACK WINS !!')
+			else:
+				print("DRAW")
+				self.create_text(150, 320, text = 'DRAW')
 			self.unbind('<Button-1>')
-			return 0
+			return winner
 		
 		# Change the turn to the program now
 		self.turn = 2
@@ -190,28 +240,35 @@ class BoardCanvas(tk.Canvas):
 		
 		# Determine the position the program will place a white stone on.
 		# Place a white stone after determining the position.
-		score, row, col = self.boardSearcher.search(self.turn, self.depth)
+		move = self.mcts_player.get_action(self.game.board)
+		self.game.board.do_move(move)
+
+		row, col = self.game.board.move_to_location(move)
 		coord = '%s%s'%(chr(ord('A') + row), col + 1)
 		print('Program has moved to {}\n'.format(coord))
-		self.gameBoard.board()[row][col] = 2
 		self.draw_stone(row,col)
 		if self.prev_exist == False:
 			self.prev_exist = True
 		else:
 			self.draw_prev_stone(self.prev_row, self.prev_col)
 		self.prev_row, self.prev_col = row, col
-		self.gameBoard.show()
+		self.game.graphic(self.game.board, self.human.player, self.mcts_player.player)
 		print('\n')
 
 		# bind after the program makes its move so that the user can continue to play
 		self.bind('<Button-1>', self.gameLoop)
 
 		# If the program wins the game, end the game and unbind.
-		if self.gameBoard.check() == 2:
-			print('WHITE WINS.')
-			self.create_text(150, 320, text = 'WHITE WINS')
+		end, winner = self.game.board.game_end()
+		if end:
+			if winner != -1:
+				print("{} WINS".format(self.players[winner]))
+				self.create_text(150, 320, text = 'WHITE WINS !!')
+			else:
+				print("DRAW")
+				self.create_text(150, 320, text = 'DRAW')
 			self.unbind('<Button-1>')
-			return 0
+			return winner
 			
 
 class BoardFrame(tk.Frame):

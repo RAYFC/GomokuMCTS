@@ -137,27 +137,43 @@ class Game(object):
 
     def graphic(self, board, player1, player2):
         """Draw the board and show game info"""
-        width = board.width
-        height = board.height
+        # width = board.width
+        # height = board.height
 
-        print("Player", player1, "with X".rjust(3))
-        print("Player", player2, "with O".rjust(3))
-        print()
-        for x in range(width):
-            print("{0:8}".format(x), end='')
-        print('\r\n')
-        for i in range(height - 1, -1, -1):
-            print("{0:4d}".format(i), end='')
-            for j in range(width):
-                loc = i * width + j
-                p = board.states.get(loc, -1)
-                if p == player1:
-                    print('X'.center(8), end='')
-                elif p == player2:
-                    print('O'.center(8), end='')
+        # print("Player", player1, "with X".rjust(3))
+        # print("Player", player2, "with O".rjust(3))
+        # print()
+        # for x in range(width):
+        #     print("{0:8}".format(x), end='')
+        # print('\r\n')
+        # for i in range(height - 1, -1, -1):
+        #     print("{0:4d}".format(i), end='')
+        #     for j in range(width):
+        #         loc = i * width + j
+        #         p = board.states.get(loc, -1)
+        #         if p == player1:
+        #             print('X'.center(8), end='')
+        #         elif p == player2:
+        #             print('O'.center(8), end='')
+        #         else:
+        #             print('_'.center(8), end='')
+        #     print('\r\n\r\n')
+
+        """Output current board on terminal."""
+        print('  A B C D E F G H')
+        for col in range(board.width):
+            print(col + 1, end=" ")
+            for row in range(board.height):
+                # ch = self.__board[row][col]
+                loc = row * board.width + col
+                ch = board.states.get(loc, -1)
+                if ch == player1:
+                    print('X', end=" ")
+                elif ch == player2:
+                    print('O', end=" ")
                 else:
-                    print('_'.center(8), end='')
-            print('\r\n\r\n')
+                    print('.', end=" ")
+            print()
 
     def start_play(self, player1, player2, start_player=0, is_shown=1):
         """start a game between two players"""
