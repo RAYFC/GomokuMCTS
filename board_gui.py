@@ -31,9 +31,8 @@ class BoardCanvas(tk.Canvas):
 		self.model_file = 'models/best_policy_8_8_5.model'
 		self.board = Board(width=self.width, height=self.height, n_in_row=5)
 		self.game = Game(self.board)
-		# ############### human VS AI ###################
-        # load the trained policy_value_net in either Theano/Lasagne, PyTorch or TensorFlow
 
+        # load the trained policy_value_net in either Theano/Lasagne, PyTorch or TensorFlow
         # best_policy = PolicyValueNet(width, height, model_file = model_file)
         # mcts_player = MCTSPlayer(best_policy.policy_value_fn, c_puct=5, n_playout=400)
 
