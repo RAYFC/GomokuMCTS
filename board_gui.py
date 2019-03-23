@@ -1,4 +1,3 @@
-from __future__ import print_function
 import tkinter as tk
 import math
 import pickle
@@ -7,6 +6,9 @@ from mcts_pure import MCTSPlayer as MCTS_Pure
 from mcts_alphaZero import MCTSPlayer
 from human_play import Human
 from policy_value_net_numpy import PolicyValueNetNumpy
+from board_util import GoBoardUtil, BLACK, WHITE, EMPTY, BORDER, \
+                       PASS, is_black_white, coord_to_point, where1d, \
+                       MAXSIZE, NULLPOINT, LEFTBUTTON
 
 class BoardCanvas(tk.Canvas):
 	"""Apply the tkinter Canvas Widget to plot the game board and stones."""
@@ -15,7 +17,7 @@ class BoardCanvas(tk.Canvas):
 		
 		tk.Canvas.__init__(self, master, height=height, width=width)
 		self.draw_gameBoard()
-		self.turn = 2
+		self.turn = BLACK
 		self.undo = False
 		self.depth = 2
 		self.prev_exist = False
@@ -99,7 +101,7 @@ class BoardCanvas(tk.Canvas):
 		end_pixel_x = (row + 1) * 30 + 2
 		end_pixel_y = (col + 1) * 30 + 2
 		
-		self.create_oval(start_pixel_x, start_pixel_y, end_pixel_x, end_pixel_y, fill = 'black')
+		self.create_oval(start_pixel_x, start_pixel_y, end_pixel_x, end_pixel_y, fill=GoBoardUtil.color_string(BLACK))
 
 
 	def draw_stone(self, row, col):
@@ -125,15 +127,10 @@ class BoardCanvas(tk.Canvas):
 		start_pixel_y = (col + 1) * 30 - 10
 		end_pixel_x = (row + 1) * 30 + 10
 		end_pixel_y = (col + 1) * 30 + 10
-		
-		if self.turn == 1:
-			self.create_oval(start_pixel_x, start_pixel_y, end_pixel_x, end_pixel_y, fill='black')
-			self.create_oval(outer_start_x, outer_start_y, outer_end_x, outer_end_y, fill='white')
-			self.create_oval(inner_start_x, inner_start_y, inner_end_x, inner_end_y, fill='black')
-		elif self.turn == 2:
-			self.create_oval(start_pixel_x, start_pixel_y, end_pixel_x, end_pixel_y, fill='white')
-			self.create_oval(outer_start_x, outer_start_y, outer_end_x, outer_end_y, fill='black')
-			self.create_oval(inner_start_x, inner_start_y, inner_end_x, inner_end_y, fill='white')
+
+		self.create_oval(start_pixel_x, start_pixel_y, end_pixel_x, end_pixel_y, fill=GoBoardUtil.color_string(self.turn))
+		self.create_oval(outer_start_x, outer_start_y, outer_end_x, outer_end_y, fill=GoBoardUtil.color_string(GoBoardUtil.opponent(self.turn)))
+		self.create_oval(inner_start_x, inner_start_y, inner_end_x, inner_end_y, fill=GoBoardUtil.color_string(self.turn))
 
 
 	def draw_prev_stone(self, row, col):
@@ -149,11 +146,35 @@ class BoardCanvas(tk.Canvas):
 		start_pixel_y = (col + 1) * 30 - 10
 		end_pixel_x = (row + 1) * 30 + 10
 		end_pixel_y = (col + 1) * 30 + 10
-		
-		if self.turn == 1:
-			self.create_oval(start_pixel_x, start_pixel_y, end_pixel_x, end_pixel_y, fill='white')
-		elif self.turn == 2:
-			self.create_oval(start_pixel_x, start_pixel_y, end_pixel_x, end_pixel_y, fill='black')
+
+		self.create_oval(start_pixel_x, start_pixel_y, end_pixel_x, end_pixel_y, fill=GoBoardUtil.color_string(GoBoardUtil.opponent(self.turn)))
+
+
+	def isValidClickPos(self, event, row, col):
+		"""Since there is only one intersection such that the distance between it 
+		and where the user clicks is less than 9, it is not necessary to find 
+		the actual least distance
+		"""
+		pixel_x = (row + 1) * 30
+		pixel_y = (col + 1) * 30
+		square_x = math.pow((event.x - pixel_x), 2)
+		square_y = math.pow((event.y - pixel_y), 2)
+		return math.sqrt(square_x + square_y) < 9
+
+
+	def check_win(self):
+		"""If the user wins the game, end the game and unbind."""
+		end, winner = self.board.game_end()
+		if end:
+			if winner != -1:
+				message = GoBoardUtil.color_string(self.turn).upper() + " WINS"
+				print("{} WINS".format(self.players[winner]))
+				self.create_text(150, 320, text=message)
+			else:
+				print("DRAW")
+				self.create_text(150, 320, text='DRAW')
+			self.unbind(LEFTBUTTON)
+		return end, winner
 
 
 	def gameLoop(self, event):
@@ -177,29 +198,19 @@ class BoardCanvas(tk.Canvas):
 			invalid_pos = True
 			# since a user might not click exactly on an intersection, place the stone onto
 			# the intersection closest to where the user clicks
-			for i in range(9):
-				for j in range(9):
-					pixel_x = (i + 1) * 30
-					pixel_y = (j + 1) * 30
-					square_x = math.pow((event.x - pixel_x), 2)
-					square_y = math.pow((event.y - pixel_y), 2)
-					distance =  math.sqrt(square_x + square_y)
-
-					# since there is noly one intersection such that the distance between it 
-					# and where the user clicks is less than 9, it is not necessary to find 
-					# the actual least distance
-					if distance < 9:
+			for row in range(self.height):
+				for col in range(self.width):
+					if self.isValidClickPos(event, row, col):
 						invalid_pos = False
-						row, col = i, j
-						self.draw_stone(i,j)
+						self.draw_stone(row, col)
 						if self.prev_exist == False:
 							self.prev_exist = True
 						else:
 							self.draw_prev_stone(self.prev_row, self.prev_col)
-						self.prev_row, self.prev_col = i, j
+						self.prev_row, self.prev_col = row, col
 						# unbind to ensure the user cannot click anywhere until the program
 						# has placed a white stone already
-						self.unbind('<Button-1>')
+						self.unbind(LEFTBUTTON)
 						break	# break the inner for loop
 				else:
 					continue	# executed if the inner for loop ended normally(no break)
@@ -214,22 +225,13 @@ class BoardCanvas(tk.Canvas):
 				break
 
 		# Place a black stone after determining the position
-		location = [row, col]
-		move = self.board.location_to_move(location)
+		move = self.board.location_to_move([row, col])
 		self.board.do_move(move)
 		self.board.show(self.human.player, self.mcts_player.player)
 		print('\n')
 
-		# If the user wins the game, end the game and unbind.
-		end, winner = self.board.game_end()
+		end, winner = self.check_win()
 		if end:
-			if winner != -1:
-				print("{} WINS".format(self.players[winner]))
-				self.create_text(150, 320, text = 'BLACK WINS !!')
-			else:
-				print("DRAW")
-				self.create_text(150, 320, text = 'DRAW')
-			self.unbind('<Button-1>')
 			return winner
 		
 		# Change the turn to the program now
@@ -254,18 +256,10 @@ class BoardCanvas(tk.Canvas):
 		print('\n')
 
 		# bind after the program makes its move so that the user can continue to play
-		self.bind('<Button-1>', self.gameLoop)
+		self.bind(LEFTBUTTON, self.gameLoop)
 
-		# If the program wins the game, end the game and unbind.
-		end, winner = self.board.game_end()
+		end, winner = self.check_win()
 		if end:
-			if winner != -1:
-				print("{} WINS".format(self.players[winner]))
-				self.create_text(150, 320, text = 'WHITE WINS !!')
-			else:
-				print("DRAW")
-				self.create_text(150, 320, text = 'DRAW')
-			self.unbind('<Button-1>')
 			return winner
 			
 
@@ -281,5 +275,5 @@ class BoardFrame(tk.Frame):
 
 	def create_widgets(self):
 		self.boardCanvas = BoardCanvas(height = 370, width = 300)
-		self.boardCanvas.bind('<Button-1>', self.boardCanvas.gameLoop)
+		self.boardCanvas.bind(LEFTBUTTON, self.boardCanvas.gameLoop)
 		self.boardCanvas.pack()
