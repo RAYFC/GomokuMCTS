@@ -130,6 +130,11 @@ class Board(object):
                     print('.', end=" ")
             print()
 
+    def rollout_policy(self):
+        """Random policy function in rollout."""
+        action_probs = np.random.rand(len(self.availables))
+        return zip(self.availables, action_probs)
+
 
 class GameBoard(object):
     """Game board."""

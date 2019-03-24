@@ -179,3 +179,10 @@ class GoBoardUtil(object):
             start = goboard.row_start(row + 1)
             board2d[row, :] = goboard.board[start : start + size]
         return board2d
+
+    @staticmethod
+    def policy_value(board):
+        """Return a list of (action, probability) tuples and a score for the state.
+        Use uniform probability and score of 0."""
+        action_probs = np.ones(len(board.availables)) / len(board.availables)
+        return zip(board.availables, action_probs), 0

@@ -2,10 +2,8 @@ import tkinter as tk
 import math
 import pickle
 from game_board import Board
-from mcts_pure import MCTSPlayer as MCTS_Pure
-from mcts_alphaZero import MCTSPlayer
-from human_play import Human
-from policy_value_net_numpy import PolicyValueNetNumpy
+from mcts import MCTSPlayer
+from player import HumanPlayer
 from board_util import GoBoardUtil, BLACK, WHITE, EMPTY, BORDER, \
                        PASS, is_black_white, coord_to_point, where1d, \
                        MAXSIZE, NULLPOINT, LEFTBUTTON
@@ -30,37 +28,18 @@ class BoardCanvas(tk.Canvas):
 	def initPlayers(self):
 		self.width = 8
 		self.height = 8
-		self.model_file = 'models/best_policy_8_8_5.model'
 		self.board = Board(width=self.width, height=self.height, n_in_row=5)
-
-        # load the trained policy_value_net in either Theano/Lasagne, PyTorch or TensorFlow
-        # best_policy = PolicyValueNet(width, height, model_file = model_file)
-        # mcts_player = MCTSPlayer(best_policy.policy_value_fn, c_puct=5, n_playout=400)
-
-        # load the provided model (trained in Theano/Lasagne) into a MCTS player written in pure numpy
-		try:
-			self.policy_param = pickle.load(open(self.model_file, 'rb'))
-		except:
-			self.policy_param = pickle.load(open(self.model_file, 'rb'), encoding='bytes')  # To support python3
-		self.best_policy = PolicyValueNetNumpy(self.width, self.height, self.policy_param)
-		self.mcts_player = MCTSPlayer(self.best_policy.policy_value_fn,
-									c_puct=5,
-									n_playout=400)  # set larger n_playout for better performance
-
-		# uncomment the following line to play with pure MCTS (it's much weaker even with a larger n_playout)
-		# self.mcts_player = MCTS_Pure(c_puct=5, n_playout=1000)
-
-		# human player, input your move in the format: 2,3
-		self.human = Human()
+		self.mcts_player = MCTSPlayer(c_puct=5, n_playout=1000)
+		self.human_player = HumanPlayer()
 
 		self.start_player = 0	# 0 - human, 1 - mcts_player
 
 		self.board.init_board(self.start_player)
 		p1, p2 = self.board.players
-		self.human.set_player_ind(p1)
+		self.human_player.set_player_ind(p1)
 		self.mcts_player.set_player_ind(p2)
-		self.players = {p2: self.mcts_player, p1: self.human}
-		self.board.show(self.human.player, self.mcts_player.player)
+		self.players = {p2: self.mcts_player, p1: self.human_player}
+		self.board.show(self.human_player.player, self.mcts_player.player)
 
 
 	def draw_gameBoard(self):
@@ -227,7 +206,7 @@ class BoardCanvas(tk.Canvas):
 		# Place a black stone after determining the position
 		move = self.board.location_to_move([row, col])
 		self.board.do_move(move)
-		self.board.show(self.human.player, self.mcts_player.player)
+		self.board.show(self.human_player.player, self.mcts_player.player)
 		print('\n')
 
 		end, winner = self.check_win()
@@ -252,7 +231,7 @@ class BoardCanvas(tk.Canvas):
 		else:
 			self.draw_prev_stone(self.prev_row, self.prev_col)
 		self.prev_row, self.prev_col = row, col
-		self.board.show(self.human.player, self.mcts_player.player)
+		self.board.show(self.human_player.player, self.mcts_player.player)
 		print('\n')
 
 		# bind after the program makes its move so that the user can continue to play
