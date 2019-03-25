@@ -112,6 +112,19 @@ class BoardCanvas(tk.Canvas):
 		self.create_oval(inner_start_x, inner_start_y, inner_end_x, inner_end_y, fill=GoBoardUtil.color_string(self.turn))
 
 
+	def draw_plain_stone(self, row, col):
+		"""Draw the plain stone with single color.
+		Specify the color of the stone depending on the turn.
+		Args:
+			row, col (i.e. coord of an intersection)
+		"""
+		start_pixel_x = (row + 1) * 30 - 10
+		start_pixel_y = (col + 1) * 30 - 10
+		end_pixel_x = (row + 1) * 30 + 10
+		end_pixel_y = (col + 1) * 30 + 10
+		self.create_oval(start_pixel_x, start_pixel_y, end_pixel_x, end_pixel_y, fill=GoBoardUtil.color_string(self.turn))
+
+
 	def draw_prev_stone(self, row, col):
 		"""Draw the previous stone with single color.
 		
@@ -138,7 +151,8 @@ class BoardCanvas(tk.Canvas):
 		pixel_y = (col + 1) * 30
 		square_x = math.pow((event.x - pixel_x), 2)
 		square_y = math.pow((event.y - pixel_y), 2)
-		return math.sqrt(square_x + square_y) < 9
+		move = self.board.location_to_move([row, col])
+		return math.sqrt(square_x + square_y) < 9 and self.board and self.board.valid_move(move)
 
 
 	def check_win(self):
@@ -156,7 +170,7 @@ class BoardCanvas(tk.Canvas):
 		return end, winner
 
 
-	def gameLoop(self, event):
+	def gameLoop_human(self, event, turn=False):
 		"""The main loop of the game. 
 		Note: The game is played on a tkinter window. However, there is some quite useful information 
 			printed onto the terminal such as the simple visualizaiton of the board after each turn,
@@ -169,73 +183,71 @@ class BoardCanvas(tk.Canvas):
 		Args:
 			event (the position the user clicks on using a mouse)
 		"""
+		if turn:
+			self.turn = WHITE
+		else:
+			self.turn = BLACK
 
-		while True:
-			# User's turn. Place a black stone. 
-			print('Your turn now...\n')
-			self.turn = 1
-			invalid_pos = True
-			# since a user might not click exactly on an intersection, place the stone onto
-			# the intersection closest to where the user clicks
-			for row in range(self.height):
-				for col in range(self.width):
-					if self.isValidClickPos(event, row, col):
-						invalid_pos = False
-						self.draw_stone(row, col)
-						if self.prev_exist == False:
-							self.prev_exist = True
-						else:
-							self.draw_prev_stone(self.prev_row, self.prev_col)
-						self.prev_row, self.prev_col = row, col
+		print('Your turn now...\n')
+		invalid_pos = True
+		for i in range(self.height):
+			for j in range(self.width):
+				if self.isValidClickPos(event, i, j):
+					invalid_pos = False
+					row = i
+					col = j
+					break
+		
+		if invalid_pos:
+			print('Invalid position.\n')
+			print('Please re-select a point\n')
+			self.bind(LEFTBUTTON, lambda event, arg = turn:self.gameLoop_human(event,arg))	
+		else:
+			self.draw_plain_stone(row, col)
+			#if self.prev_exist == False:
+			#	self.prev_exist = True
+			#else:
+				#self.draw_prev_stone(self.prev_row, self.prev_col)
+			#	self.prev_row, self.prev_col = row, col
 						# unbind to ensure the user cannot click anywhere until the program
 						# has placed a white stone already
-						self.unbind(LEFTBUTTON)
-						break	# break the inner for loop
-				else:
-					continue	# executed if the inner for loop ended normally(no break)
-				break			# executed if 'continue' skipped(break)
-								# break the outer for loop
-			
-			# break the inner while loop
-			if invalid_pos:
-				print('Invalid position.\n')
-				break
-			else:
-				break
+			self.unbind(LEFTBUTTON)
 
-		# Place a black stone after determining the position
-		move = self.board.location_to_move([row, col])
+			# Place a black stone after determining the position
+			move = self.board.location_to_move([row, col])
+			self.board.do_move(move)
+			self.board.show(self.human_player.playerId, self.mcts_player.playerId)
+			print('\n')
+
+			end, winner = self.check_win()
+			if end:
+				return winner
+			self.unbind(LEFTBUTTON)
+			self.update()
+			self.gameLoop_robot(turn)
+	
+	
+	def gameLoop_robot(self, turn=False, start=False):
+		if turn:
+			self.turn = BLACK
+		else:
+			self.turn = WHITE	
+		print('Program is thinking now...')	
+		move = self.mcts_player.get_action(self.board,start)
 		self.board.do_move(move)
-		self.board.show(self.human_player.playerId, self.mcts_player.playerId)
-		print('\n')
-
-		end, winner = self.check_win()
-		if end:
-			return winner
-		
-		# Change the turn to the program now
-		self.turn = 2
-		print('Program is thinking now...')
-		
-		# Determine the position the program will place a white stone on.
-		# Place a white stone after determining the position.
-		move = self.mcts_player.get_action(self.board)
-		self.board.do_move(move)
-
 		row, col = self.board.move_to_location(move)
 		coord = '%s%s'%(chr(ord('A') + row), col + 1)
 		print('Program has moved to {}\n'.format(coord))
-		self.draw_stone(row,col)
-		if self.prev_exist == False:
-			self.prev_exist = True
-		else:
-			self.draw_prev_stone(self.prev_row, self.prev_col)
-		self.prev_row, self.prev_col = row, col
+		self.draw_plain_stone(row,col)
+		#if self.prev_exist == False:
+		#	self.prev_exist = True
+		#else:
+			#self.draw_prev_stone(self.prev_row, self.prev_col)
+		#self.prev_row, self.prev_col = row, col
 		self.board.show(self.human_player.playerId, self.mcts_player.playerId)
 		print('\n')
-
 		# bind after the program makes its move so that the user can continue to play
-		self.bind(LEFTBUTTON, self.gameLoop)
+		self.bind(LEFTBUTTON, lambda event, arg = turn:self.gameLoop_human(event,arg))
 
 		end, winner = self.check_win()
 		if end:
@@ -247,12 +259,25 @@ class BoardFrame(tk.Frame):
 	provide padding between other widgets.
 	"""
 	
-	def __init__(self, master = None):
+	def __init__(self, master=None):
+		choice = input("Choose player by entering 1 for Black or 2 for White (default player is Black): ")
+		turn = BLACK
+		try:
+			turn = int(choice)
+		except:
+			pass
+		
+		if not is_black_white(turn):
+			turn = BLACK
+
 		tk.Frame.__init__(self, master)
-		self.create_widgets()
-
-
-	def create_widgets(self):
-		self.boardCanvas = BoardCanvas(height = 370, width = 300)
-		self.boardCanvas.bind(LEFTBUTTON, self.boardCanvas.gameLoop)
+		self.create_widgets(turn)
+		self.master.title("GOMOKU")	
+	
+	def create_widgets(self, turn):
+		self.boardCanvas = BoardCanvas(height=370, width=300)
+		if turn == BLACK:
+			self.boardCanvas.bind(LEFTBUTTON, self.boardCanvas.gameLoop_human)
+		else:
+			self.boardCanvas.gameLoop_robot(True, True)
 		self.boardCanvas.pack()

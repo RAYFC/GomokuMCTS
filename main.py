@@ -1,5 +1,7 @@
-
+import sys
 import tkinter as tk
+import warnings
+warnings.filterwarnings("ignore")
 from board_gui import BoardFrame
 
 def main():

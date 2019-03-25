@@ -184,7 +184,9 @@ class MCTSPlayer(Player):
     def reset_player(self):
         self.mcts.update_with_move(-1)
 
-    def get_action(self, board):
+    def get_action(self, board, start=False):
+        if start:
+            return 40
         sensible_moves = board.availables
         if len(sensible_moves) > 0:
             move = self.mcts.get_move(board)

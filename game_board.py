@@ -143,6 +143,9 @@ class Board(object):
         action_probs = np.random.rand(len(self.availables))
         return zip(self.availables, action_probs)
 
+    def valid_move(self, move):
+        return move in self.availables
+
 
 class GameBoard(object):
     """Game board."""
