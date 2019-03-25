@@ -3,6 +3,7 @@ import copy
 from operator import itemgetter
 from board_util import GoBoardUtil
 from player import Player
+from board_evaluator import BoardEvaluator
 
 class TreeNode(object):
     """A node in the MCTS tree. Each node keeps track of its own value Q,
@@ -89,6 +90,7 @@ class MCTS(object):
         self._policy = policy_value_fn
         self._c_puct = c_puct
         self._n_playout = n_playout
+        self.board_evaluator = BoardEvaluator()
 
     def _playout(self, state):
         """Run a single playout from the root to the leaf, getting a value at
@@ -103,16 +105,26 @@ class MCTS(object):
             action, node = node.select(self._c_puct)
             state.do_move(action)
 
-        # Evaluate the leaf using a network which outputs a list of
+        # Evaluate the leaf which outputs a list of
         # (action, probability) tuples p and also a score v in [-1, 1]
         # for the current player.
-        action_probs, _ = self._policy(state)
+        action_probs, leaf_value = self._policy(state, self.board_evaluator)
         # Check for end of game
         end, winner = state.game_end()
         if not end:
             node.expand(action_probs)
+        else:
+            # for end state，return the "true" leaf_value
+            if winner == -1:  # tie
+                leaf_value = 0.0
+            else:
+                if winner == state.get_current_player():
+                    leaf_value = 1.0
+                else:
+                    leaf_value = -1.0
+
         # Evaluate the leaf node by random rollout
-        leaf_value = self._evaluate_rollout(state)
+        # leaf_value = self._evaluate_rollout(state)
         # Update value and visit count of nodes in this traversal.
         node.update_recursive(-leaf_value)
 
@@ -167,7 +179,7 @@ class MCTSPlayer(Player):
     """AI player based on MCTS"""
     def __init__(self, c_puct=5, n_playout=2000):
         super().__init__()
-        self.mcts = MCTS(GoBoardUtil.policy_value, c_puct, n_playout)
+        self.mcts = MCTS(GoBoardUtil.minimax_policy_value, c_puct, n_playout)
 
     def reset_player(self):
         self.mcts.update_with_move(-1)
@@ -182,4 +194,4 @@ class MCTSPlayer(Player):
             print("WARNING: the board is full")
 
     def __str__(self):
-        return "{} {}".format(self.mcts.__str__, self.player)
+        return "{} {}".format(self.mcts, self.playerId)

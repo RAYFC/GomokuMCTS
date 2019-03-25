@@ -26,8 +26,8 @@ class BoardCanvas(tk.Canvas):
 		
 
 	def initPlayers(self):
-		self.width = 8
-		self.height = 8
+		self.width = 9
+		self.height = 9
 		self.board = Board(width=self.width, height=self.height, n_in_row=5)
 		self.mcts_player = MCTSPlayer(c_puct=5, n_playout=1000)
 		self.human_player = HumanPlayer()
@@ -36,37 +36,37 @@ class BoardCanvas(tk.Canvas):
 
 		self.board.init_board(self.start_player)
 		p1, p2 = self.board.players
-		self.human_player.set_player_ind(p1)
-		self.mcts_player.set_player_ind(p2)
+		self.human_player.set_player_id(p1)
+		self.mcts_player.set_player_id(p2)
 		self.players = {p2: self.mcts_player, p1: self.human_player}
-		self.board.show(self.human_player.player, self.mcts_player.player)
+		self.board.show(self.human_player.playerId, self.mcts_player.playerId)
 
 
 	def draw_gameBoard(self):
 		"""Plot the game board."""
 
-		# 8 horizontal lines
-		for i in range(8):
+		# 9 horizontal lines
+		for i in range(9):
 			start_pixel_x = (i + 1) * 30
 			start_pixel_y = (0 + 1) * 30
 			end_pixel_x = (i + 1) * 30
-			end_pixel_y = (7 + 1) * 30
+			end_pixel_y = (8 + 1) * 30
 			self.create_line(start_pixel_x, start_pixel_y, end_pixel_x, end_pixel_y)
 
-		# 8 vertical lines
-		for j in range(8):
+		# 9 vertical lines
+		for j in range(9):
 			start_pixel_x = (0 + 1) * 30
 			start_pixel_y = (j + 1) * 30
-			end_pixel_x = (7 + 1) * 30
+			end_pixel_x = (8 + 1) * 30
 			end_pixel_y = (j + 1) * 30
 			self.create_line(start_pixel_x, start_pixel_y, end_pixel_x, end_pixel_y)
 
 		# place a "star" to particular intersections 
-		# self.draw_star(2, 2)
-		# self.draw_star(6, 2)
-		# self.draw_star(4, 4)
-		# self.draw_star(2, 6)
-		# self.draw_star(6, 6)
+		self.draw_star(2, 2)
+		self.draw_star(6, 2)
+		self.draw_star(4, 4)
+		self.draw_star(2, 6)
+		self.draw_star(6, 6)
 
 
 	def draw_star(self, row, col):
@@ -206,7 +206,7 @@ class BoardCanvas(tk.Canvas):
 		# Place a black stone after determining the position
 		move = self.board.location_to_move([row, col])
 		self.board.do_move(move)
-		self.board.show(self.human_player.player, self.mcts_player.player)
+		self.board.show(self.human_player.playerId, self.mcts_player.playerId)
 		print('\n')
 
 		end, winner = self.check_win()
@@ -231,7 +231,7 @@ class BoardCanvas(tk.Canvas):
 		else:
 			self.draw_prev_stone(self.prev_row, self.prev_col)
 		self.prev_row, self.prev_col = row, col
-		self.board.show(self.human_player.player, self.mcts_player.player)
+		self.board.show(self.human_player.playerId, self.mcts_player.playerId)
 		print('\n')
 
 		# bind after the program makes its move so that the user can continue to play

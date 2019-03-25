@@ -1,15 +1,15 @@
 class Player(object):
     def __init__(self):
-        self.player = None
+        self.playerId = None
 
-    def set_player_ind(self, p):
-        self.player = p
+    def set_player_id(self, playerId):
+        self.playerId = playerId
 
     def get_action(self, board):
         return 0
 
     def __str__(self):
-        return "Player {}".format(self.player)
+        return "Player {}".format(self.playerId)
 
 
 class HumanPlayer(Player):

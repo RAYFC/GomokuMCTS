@@ -90,6 +90,13 @@ def coord_to_point(row, col, boardsize):
     NS = boardsize + 1
     return NS * row + col
 
+def softmax(x):
+    # print("x = ",x)
+    probs = np.exp(x - np.mean(x))
+    # print("probs = ", probs)
+    probs /= np.sum(probs)
+    return probs
+
 class GoBoardUtil(object):
     
     @staticmethod
@@ -181,8 +188,30 @@ class GoBoardUtil(object):
         return board2d
 
     @staticmethod
-    def policy_value(board):
+    def policy_value(board, evaluator=None):
         """Return a list of (action, probability) tuples and a score for the state.
         Use uniform probability and score of 0."""
         action_probs = np.ones(len(board.availables)) / len(board.availables)
         return zip(board.availables, action_probs), 0
+
+    @staticmethod
+    def minimax_policy_value(board, evaluator):
+        moves = board.availables
+        movesWithScore = []
+        for move in moves:
+            [row, col] = board.move_to_location(move)
+            board.get_2d_board()[row][col] = board.current_player
+            score = -evaluator.evaluate(board.get_2d_board(), GoBoardUtil.opponent(board.current_player))
+            movesWithScore.append((move, score))
+            board.get_2d_board()[row][col] = EMPTY
+
+        movesWithScore.sort(key=lambda elem: elem[1], reverse=True)
+        movesSorted, scoresSorted = map(list, zip(*movesWithScore))
+        probsSorted = list(softmax(np.array(scoresSorted)))
+        movesWithProb = list(zip(movesSorted, probsSorted))
+        movesWithProb = movesWithProb[:min(5, len(movesWithProb))]
+
+        return movesWithProb, 0
+        
+        
+

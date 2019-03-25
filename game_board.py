@@ -4,8 +4,8 @@ class Board(object):
     """board for the game"""
 
     def __init__(self, **kwargs):
-        self.width = int(kwargs.get('width', 8))
-        self.height = int(kwargs.get('height', 8))
+        self.width = int(kwargs.get('width', 9))
+        self.height = int(kwargs.get('height', 9))
         # board states stored as a dict,
         # key: move as location on the board,
         # value: player as pieces type
@@ -23,7 +23,13 @@ class Board(object):
         self.availables = list(range(self.width * self.height))
         self.states = {}
         self.last_move = -1
+        # also keep a 2D board as a 9*9 array: each posision is initially set to be 0
+        self.__board = [[0 for _ in range(9)] for _ in range(9)]
 
+    def get_2d_board(self):
+        """Return the board array."""
+        return self.__board
+    
     def move_to_location(self, move):
         row = move // self.width
         col = move % self.width
@@ -61,6 +67,8 @@ class Board(object):
         return square_state[:, ::-1, :]
 
     def do_move(self, move):
+        [row, col] = self.move_to_location(move)
+        self.__board[row][col] = self.current_player
         self.states[move] = self.current_player
         self.availables.remove(move)
         self.current_player = (
@@ -204,19 +212,3 @@ class GameBoard(object):
         """Return the board array."""
         return self.__board
 
-
-    def show(self):
-        """Output current board on terminal."""
-        print('  A B C D E F G H I')
-        self.check()
-        for col in range(9):
-            print(col + 1, end=" ")
-            for row in range(9):
-                ch = self.__board[row][col]
-                if ch == 0:
-                    print('.', end=" ")
-                elif ch == 1:
-                    print('X', end=" ")
-                elif ch == 2:
-                    print('O', end=" ")
-            print()
