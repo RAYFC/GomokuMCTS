@@ -211,7 +211,7 @@ class GoBoardUtil(object):
         movesWithProb = list(zip(movesSorted, probsSorted))
         movesWithProb = movesWithProb[:min(5, len(movesWithProb))]
 
-        return movesWithProb, 0
+        return movesWithProb, np.tanh(np.mean(np.array(scoresSorted)))
         
         
 
