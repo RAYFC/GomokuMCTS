@@ -124,7 +124,7 @@ class Board(object):
 
     def show(self, player1, player2):
         """Output current board on terminal."""
-        print('  A B C D E F G H')
+        print('  A B C D E F G H I')
         for col in range(self.width):
             print(col + 1, end=" ")
             for row in range(self.height):
