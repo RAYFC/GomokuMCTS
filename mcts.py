@@ -1,5 +1,10 @@
+# Code reuse: https://github.com/junxiaosong/AlphaZero_Gomoku/blob/master/mcts_pure.py
+# By Junxiao Song
+# We modified some functions to make it work better for our program.
+
 import numpy as np
 import copy
+import time
 from operator import itemgetter
 from board_util import GoBoardUtil
 from player import Player
@@ -89,9 +94,9 @@ class MCTS(object):
         self._root = TreeNode(None, 1.0)
         self._policy = policy_value_fn
         self._c_puct = c_puct
-        self._n_playout = n_playout
+        # self._n_playout = n_playout
         self.board_evaluator = BoardEvaluator()
-
+        self.run_time = 10
     def _playout(self, state):
         """Run a single playout from the root to the leaf, getting a value at
         the leaf and propagating it back through its parents.
@@ -155,7 +160,9 @@ class MCTS(object):
 
         Return: the selected action
         """
-        for n in range(self._n_playout):
+        start = time.time()
+        # for _ in range(self._n_playout):
+        while (time.time() - start) < self.run_time:
             state_copy = copy.deepcopy(state)
             self._playout(state_copy)
         return max(self._root._children.items(),
@@ -170,10 +177,6 @@ class MCTS(object):
             self._root._parent = None
         else:
             self._root = TreeNode(None, 1.0)
-
-    def __str__(self):
-        return "MCTS"
-
 
 class MCTSPlayer(Player):
     """AI player based on MCTS"""
@@ -194,6 +197,3 @@ class MCTSPlayer(Player):
             return move
         else:
             print("WARNING: the board is full")
-
-    def __str__(self):
-        return "{} {}".format(self.mcts, self.playerId)
